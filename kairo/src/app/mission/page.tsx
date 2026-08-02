@@ -4,9 +4,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2, Clock } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
 import { EmpathyRestructureResponse, Step, StuckReason } from "@/lib/types";
+import { FocusTimer } from "@/components/mission/FocusTimer";
 
 const STUCK_OPTIONS: { label: string; value: StuckReason }[] = [
   { label: "It's too big", value: "too_big" },
@@ -15,6 +16,9 @@ const STUCK_OPTIONS: { label: string; value: StuckReason }[] = [
   { label: "I don't understand", value: "dont_understand" },
   { label: "Something else", value: "something_else" },
 ];
+
+const TIMER_EXTENSION_MINUTES = 3;
+const DEFAULT_STEP_MINUTES = 5;
 
 export default function MissionPage() {
   const router = useRouter();
@@ -27,6 +31,11 @@ export default function MissionPage() {
   const [showStuckPrompt, setShowStuckPrompt] = useState(false);
   const [empathyMessage, setEmpathyMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Timer state
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [targetMinutes, setTargetMinutes] = useState(DEFAULT_STEP_MINUTES);
+  const [timerHidden, setTimerHidden] = useState(false);
 
   useEffect(() => {
     loadFromStorage();
@@ -43,6 +52,24 @@ export default function MissionPage() {
     }
   }, [activeMission, router]);
 
+  const currentStep: Step | undefined = activeMission?.steps[activeMission.currentStepIndex];
+
+  // Reset timer whenever the active step changes
+  useEffect(() => {
+    setElapsedSeconds(0);
+    setTargetMinutes(DEFAULT_STEP_MINUTES);
+    setNeedMoreTimeCount(0);
+  }, [currentStep?.id]);
+
+  // Tick the stopwatch up every second while on an incomplete step
+  useEffect(() => {
+    if (!currentStep || activeMission?.completedAt) return;
+    const interval = setInterval(() => {
+      setElapsedSeconds((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [currentStep, activeMission?.completedAt]);
+
   if (!activeMission) {
     return (
       <main className="min-h-screen flex items-center justify-center">
@@ -51,15 +78,12 @@ export default function MissionPage() {
     );
   }
 
-  const currentStep: Step | undefined =
-    activeMission.steps[activeMission.currentStepIndex];
   const isMissionComplete = activeMission.completedAt !== null;
   const completedCount = activeMission.steps.filter((s) => s.completed).length;
 
   function handleCompleteStep() {
     if (!currentStep) return;
     completeStep(currentStep.id);
-    setNeedMoreTimeCount(0);
     setEmpathyMessage(null);
 
     const willBeComplete =
@@ -73,7 +97,17 @@ export default function MissionPage() {
   function handleNeedMoreTime() {
     const nextCount = needMoreTimeCount + 1;
     setNeedMoreTimeCount(nextCount);
-    if (nextCount >= 3) {
+
+    if (nextCount < 3) {
+      // First two presses: gently extend the timer, no AI call needed
+      setTargetMinutes((m) => m + TIMER_EXTENSION_MINUTES);
+      setEmpathyMessage(
+        nextCount === 1
+          ? "Sure — let's give this a little more room. Take your time."
+          : "No worries at all, we've added a bit more time again."
+      );
+    } else {
+      // Third consecutive press: something deeper is going on, ask why
       setShowStuckPrompt(true);
     }
   }
@@ -100,8 +134,9 @@ export default function MissionPage() {
       const data: EmpathyRestructureResponse = await res.json();
       setEmpathyMessage(data.empathy_message);
       setNeedMoreTimeCount(0);
+      setTargetMinutes(DEFAULT_STEP_MINUTES);
+      setElapsedSeconds(0);
 
-      // Replace the current step with the new smaller micro-steps
       const newSteps: Step[] = data.new_micro_steps.map((s) => ({
         id: crypto.randomUUID(),
         title: s.step_title,
@@ -132,7 +167,6 @@ export default function MissionPage() {
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <div className="w-full max-w-xl flex flex-col gap-8">
-        {/* Progress indicator */}
         <div className="flex items-center gap-3">
           <div className="flex-1 h-2 rounded-full bg-black/10 overflow-hidden">
             <motion.div
@@ -149,13 +183,11 @@ export default function MissionPage() {
         </div>
 
         {isMissionComplete ? (
-          <MissionCompleteCard mission={activeMission} onDone={() => router.push("/")} />
+          <MissionCompleteCard onDone={() => router.push("/")} />
         ) : (
           <>
-            {/* Coach message */}
             <p className="text-[#6B7280] text-center">{activeMission.coachMessage}</p>
 
-            {/* Active step card */}
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentStep?.id}
@@ -165,10 +197,12 @@ export default function MissionPage() {
                 transition={{ duration: 0.4 }}
                 className="rounded-3xl bg-white shadow-sm border border-black/5 p-8 flex flex-col gap-6 items-center text-center"
               >
-                <div className="flex items-center gap-2 text-[#6B7280] text-sm">
-                  <Clock size={16} />
-                  <span>~{activeMission.estimatedTotalMinutes} min total, no rush</span>
-                </div>
+                <FocusTimer
+                  elapsedSeconds={elapsedSeconds}
+                  targetMinutes={targetMinutes}
+                  hidden={timerHidden}
+                  onToggleHidden={() => setTimerHidden((h) => !h)}
+                />
 
                 <h2 className="font-display text-2xl font-bold">
                   {currentStep?.title}
@@ -209,7 +243,6 @@ export default function MissionPage() {
         )}
       </div>
 
-      {/* Stuck prompt modal */}
       <AnimatePresence>
         {showStuckPrompt && (
           <motion.div
@@ -252,13 +285,7 @@ export default function MissionPage() {
   );
 }
 
-function MissionCompleteCard({
-  mission,
-  onDone,
-}: {
-  mission: { estimatedTotalMinutes: number; steps: Step[] };
-  onDone: () => void;
-}) {
+function MissionCompleteCard({ onDone }: { onDone: () => void }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
