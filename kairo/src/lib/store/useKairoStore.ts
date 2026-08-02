@@ -13,6 +13,7 @@ import {
   calculateLevel,
   xpForCompletingStep,
   xpForCompletingMission,
+  calculateUpdatedStreak,
 } from "@/lib/xp";
 
 interface KairoState {
@@ -79,6 +80,12 @@ export const useKairoStore = create<KairoState>((set, get) => ({
     if (!mission) return;
 
     const newXp = currentProgress.xp + xpForCompletingMission();
+    const today = new Date().toISOString();
+    const newStreak = calculateUpdatedStreak(
+      currentProgress.lastActiveDate,
+      currentProgress.currentStreak
+    );
+
     const updatedProgress: Progress = {
       ...currentProgress,
       xp: newXp,
@@ -86,6 +93,9 @@ export const useKairoStore = create<KairoState>((set, get) => ({
       totalMissionsCompleted: currentProgress.totalMissionsCompleted + 1,
       totalFocusMinutes:
         currentProgress.totalFocusMinutes + mission.estimatedTotalMinutes,
+      currentStreak: newStreak,
+      longestStreak: Math.max(newStreak, currentProgress.longestStreak),
+      lastActiveDate: today,
     };
 
     persistProgress(updatedProgress);

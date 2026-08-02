@@ -2,6 +2,7 @@
 import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { Header } from "@/components/ui/Header";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({
       <body
         className={`${outfit.variable} ${jakarta.variable} antialiased bg-[#FAF9F6] text-[#2D3436]`}
       >
+        <Header />
         {children}
       </body>
     </html>
