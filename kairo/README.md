@@ -1,36 +1,57 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kairo an AI task coach for ADHD
 
-## Getting Started
+**Built for the IncludAI Neurodiversity Hackathon (Track 1: AI for Learners Who Think Differently), in partnership with Stanford NNEA.**
 
-First, run the development server:
+Kairo is not a to-do list. It's a calm, encouraging AI coach that helps students and young adults with ADHD start tasks they're stuck on by breaking any task into small, doable steps, staying with them when it gets hard, and celebrating progress without ever guilting them for it.
+
+---
+
+## The problem
+
+For many people with ADHD, the hardest part of a task isn't finishing it, it's *starting* it. A vague, overwhelming task like "clean my room" or "study for chemistry" has no obvious first move, and that ambiguity is often enough to stall someone out before they even begin. Most productivity tools assume the hard part is remembering the task. Kairo assumes the hard part is *starting* it, and is built around that instead.
+
+## Who it's for
+
+Students and young adults with ADHD (or anyone who experiences task initiation paralysis) who need a tool that breaks work down for them, in the moment, without judgment rather than another list they have to organize themselves.
+
+## How Kairo uses AI
+
+Kairo's core loop is powered by an LLM (via [Groq](https://groq.com)) operating in two distinct modes:
+
+1. **Task Breakdown** — given any task in plain language, the AI generates a short (3–6 step) roadmap, always starting with an almost zero effort first step (the "snowball" effect), plus a soft, non-strict time estimate.
+2. **Empathy Restructure** — if someone is still stuck after multiple attempts, Kairo asks *why* (too big / distracted / tired / don't understand / something else) and generates a targeted, smaller plan based on the actual reason rather than a generic "try again."
+
+Both modes run through a single system prompt tuned specifically for calm, non judgmental, ADHD aware language  explicitly avoiding words like "must," "should," and "failed."
+
+## Features
+
+- **AI task breakdown** — any task, broken into small steps in seconds
+- **Focus Mode** — only one step visible at a time, no clutter
+- **Gentle stopwatch timer** — counts up (never down), stretches when you need more time instead of penalizing you, and is fully hideable
+- **"Need More Time" empathy flow** — after 3 tries on one step, Kairo asks what's making it hard and rebuilds the plan around the real reason
+- **XP, levels, and streaks** — lightweight gamification that rewards effort, not just completion
+- **Growth journey stats** — a look back at total missions, focus minutes, and streaks
+- **Mission history** — every completed mission, kept
+- **No accounts, no server-side data** — everything is stored locally in your browser
+
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| Animation | Framer Motion |
+| Icons | Lucide React |
+| State | Zustand |
+| Persistence | Browser Local Storage (no backend, no accounts) |
+| AI | Groq API (Llama 3.3 70B) |
+
+## Getting started
+
+**Prerequisites:** Node.js 18+, npm, and a free [Groq API key](https://console.groq.com/keys).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+git clone https://github.com/YOUR_USERNAME/kairo.git
+cd kairo
+npm install
