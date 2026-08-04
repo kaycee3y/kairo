@@ -16,7 +16,6 @@ export default function LandingPage() {
     <main className="min-h-screen flex flex-col">
       <section className="flex-1 flex flex-col justify-center px-6 py-16 max-w-5xl mx-auto w-full">
         <div className="grid md:grid-cols-2 gap-16 items-center">
-          {/* Left: copy */}
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -49,7 +48,6 @@ export default function LandingPage() {
             </Link>
           </motion.div>
 
-          {/* Right: flowing path visual */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -61,7 +59,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Callout strip */}
       <section className="px-6 pb-16 max-w-5xl mx-auto w-full">
         <div className="grid sm:grid-cols-3 gap-4">
           {CALLOUTS.map((c) => (
@@ -76,10 +73,6 @@ export default function LandingPage() {
           ))}
         </div>
       </section>
-
-      <footer className="text-center pb-8 text-sm text-[#6B7280]">
-        Small steps, real progress.
-      </footer>
     </main>
   );
 }
