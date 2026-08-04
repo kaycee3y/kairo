@@ -1,123 +1,117 @@
-// src/app/start/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowLeft, Flame, Target, Clock, Trophy, ListChecks } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
-import { BreakdownResponse, Mission, Step } from "@/lib/types";
+import { xpRequiredForLevel } from "@/lib/xp";
 
-export default function StartPage() {
+export default function StatsPage() {
   const router = useRouter();
-  const setActiveMission = useKairoStore((s) => s.setActiveMission);
+  const progress = useKairoStore((s) => s.progress);
+  const loadFromStorage = useKairoStore((s) => s.loadFromStorage);
 
-  const [task, setTask] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
 
-  async function handleStart() {
-    if (!task.trim()) return;
-    setLoading(true);
-    setError(null);
+  const xpNeededForNext = xpRequiredForLevel(progress.level);
+  const xpProgressWithinLevel = progress.xp % xpNeededForNext;
+  const percentToNextLevel = Math.round(
+    (xpProgressWithinLevel / xpNeededForNext) * 100
+  );
 
-    try {
-      const res = await fetch("/api/coach", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: "breakdown", task: task.trim() }),
-      });
-
-      if (!res.ok) throw new Error("Request failed");
-
-      const data: BreakdownResponse = await res.json();
-
-      const steps: Step[] = data.steps.map((s) => ({
-        id: crypto.randomUUID(),
-        title: s.step_title,
-        description: s.step_description,
-        completed: false,
-      }));
-
-      const mission: Mission = {
-        id: crypto.randomUUID(),
-        taskInput: task.trim(),
-        coachMessage: data.coach_message,
-        estimatedTotalMinutes: data.estimated_total_minutes,
-        steps,
-        currentStepIndex: 0,
-        createdAt: new Date().toISOString(),
-        completedAt: null,
-      };
-
-      setActiveMission(mission);
-      router.push("/mission");
-    } catch (err) {
-      console.error(err);
-      setError(
-        "No worries — something didn't connect right. Let's try that again."
-      );
-    } finally {
-      setLoading(false);
-    }
-  }
+  const stats = [
+    {
+      icon: Target,
+      label: "Missions completed",
+      value: progress.totalMissionsCompleted,
+    },
+    {
+      icon: Clock,
+      label: "Focus minutes",
+      value: progress.totalFocusMinutes,
+    },
+    {
+      icon: Flame,
+      label: "Current streak",
+      value: `${progress.currentStreak} ${progress.currentStreak === 1 ? "day" : "days"}`,
+    },
+    {
+      icon: Trophy,
+      label: "Longest streak",
+      value: `${progress.longestStreak} ${progress.longestStreak === 1 ? "day" : "days"}`,
+    },
+  ];
 
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center px-6">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="w-full max-w-xl flex flex-col items-center text-center gap-8"
-      >
-        <motion.div
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="w-16 h-16 rounded-full bg-[#2F6F5E]"
-          aria-hidden="true"
-        />
+    <main className="min-h-screen flex flex-col items-center px-6 py-12">
+      <div className="w-full max-w-xl flex flex-col gap-8">
+        <button
+          onClick={() => router.push("/")}
+          className="flex items-center gap-2 text-[#6B7280] hover:text-[#2D3436] w-fit"
+        >
+          <ArrowLeft size={18} />
+          Back
+        </button>
 
-        <div className="flex flex-col gap-3">
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
-            What&apos;s on your mind?
-          </h1>
-          <p className="text-[#6B7280] text-lg">
-            Tell me anything you&apos;re trying to get done — I&apos;ll help
-            you find the smallest first step.
+        <div className="flex flex-col items-center gap-2 text-center">
+          <h1 className="font-display text-3xl font-bold">Your journey so far</h1>
+          <p className="text-[#6B7280]">
+            Every small step you&apos;ve taken, added up.
           </p>
         </div>
 
-        <div className="w-full flex flex-col gap-4">
-          <textarea
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="e.g. Clean my room, study for chemistry, prep for an interview..."
-            rows={3}
-            className="w-full rounded-2xl border border-black/10 bg-white p-4 text-lg
-                       placeholder:text-[#6B7280]/70 focus:outline-none focus:ring-2
-                       focus:ring-[#2F6F5E] resize-none shadow-sm"
-          />
+        <div className="rounded-3xl bg-white shadow-sm border border-black/5 p-8 flex flex-col items-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-[#2F6F5E] flex items-center justify-center text-white font-display text-2xl font-bold">
+            {progress.level}
+          </div>
+          <p className="text-[#6B7280] text-sm">Level {progress.level}</p>
 
-          {error && (
-            <p className="text-sm text-[#B45309] text-left" role="alert">
-              {error}
-            </p>
-          )}
-
-          <button
-            onClick={handleStart}
-            disabled={loading || !task.trim()}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl
-                       bg-[#2F6F5E] text-white font-display font-semibold text-lg
-                       py-4 transition-opacity disabled:opacity-40
-                       hover:opacity-90 focus:outline-none focus:ring-2
-                       focus:ring-offset-2 focus:ring-[#2F6F5E]"
-          >
-            {loading ? "Finding your first step..." : "Start mission"}
-            {!loading && <ArrowRight size={20} />}
-          </button>
+          <div className="w-full h-2 rounded-full bg-black/10 overflow-hidden">
+            <motion.div
+              className="h-full bg-[#F2994A]"
+              animate={{ width: `${percentToNextLevel}%` }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+          </div>
+          <p className="text-xs text-[#6B7280]">
+            {xpProgressWithinLevel} / {xpNeededForNext} XP to next level
+          </p>
         </div>
-      </motion.div>
+
+        <div className="grid grid-cols-2 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-2xl bg-white shadow-sm border border-black/5 p-6 flex flex-col gap-2"
+            >
+              <stat.icon size={20} className="text-[#2F6F5E]" />
+              <span className="font-display text-2xl font-bold">
+                {stat.value}
+              </span>
+              <span className="text-sm text-[#6B7280]">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => router.push("/history")}
+          className="flex items-center justify-center gap-2 rounded-2xl border border-black/10
+                     text-[#2D3436] font-medium py-3 hover:bg-black/5 focus:outline-none
+                     focus:ring-2 focus:ring-offset-2 focus:ring-[#2F6F5E]"
+        >
+          <ListChecks size={18} />
+          View mission history
+        </button>
+
+        {progress.totalMissionsCompleted === 0 && (
+          <p className="text-center text-[#6B7280] text-sm">
+            No missions yet — your first completed step will show up here.
+          </p>
+        )}
+      </div>
     </main>
   );
 }
