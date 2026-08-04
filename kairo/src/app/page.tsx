@@ -31,7 +31,7 @@ export default function LandingPage() {
             </h1>
 
             <p className="text-[#6B7280] text-lg max-w-md">
-              Kairo breaks any task into small, calm steps — and stays with
+              Kairo breaks any task into small, calm stepsand stays with
               you when it gets hard. Built for brains that start big and
               stall fast.
             </p>
