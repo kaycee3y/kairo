@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Mic, MicOff } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
 import { BreakdownResponse, Mission, Step } from "@/lib/types";
+import { AIOrb } from "@/components/ui/AIOrb";
 
 export default function StartPage() {
   const router = useRouter();
@@ -108,12 +109,7 @@ export default function StartPage() {
         transition={{ duration: 0.6, ease: "easeOut" }}
         className="w-full max-w-xl flex flex-col items-center text-center gap-8"
       >
-        <motion.div
-          animate={{ scale: [1, 1.06, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-          className="w-16 h-16 rounded-full bg-[#2F6F5E]"
-          aria-hidden="true"
-        />
+        <AIOrb size={96} />
 
         <div className="flex flex-col gap-3">
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">
