@@ -108,7 +108,7 @@ export default function StatsPage() {
 
         {progress.totalMissionsCompleted === 0 && (
           <p className="text-center text-[#6B7280] text-sm">
-            No missions yet — your first completed step will show up here.
+            No missions yet your first completed step will show up here.
           </p>
         )}
       </div>
