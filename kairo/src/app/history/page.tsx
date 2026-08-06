@@ -42,7 +42,7 @@ export default function HistoryPage() {
 
         {missions.length === 0 ? (
           <p className="text-center text-[#6B7280] text-sm">
-            No missions completed yet — your first one will show up here.
+            No missions completed yet your first one will show up here.
           </p>
         ) : (
           <div className="flex flex-col gap-3">
