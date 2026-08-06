@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Mic } from "lucide-react";
+import { ArrowRight, Mic, MicOff } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
 import { BreakdownResponse, Mission, Step } from "@/lib/types";
 
@@ -14,6 +14,45 @@ export default function StartPage() {
   const [task, setTask] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [listening, setListening] = useState(false);
+  const [micSupported, setMicSupported] = useState(true);
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setMicSupported(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setTask((prev) => (prev ? `${prev} ${transcript}` : transcript));
+    };
+
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+
+    recognitionRef.current = recognition;
+  }, []);
+
+  function toggleMic() {
+    if (!micSupported || !recognitionRef.current) return;
+    if (listening) {
+      recognitionRef.current.stop();
+      setListening(false);
+    } else {
+      recognitionRef.current.start();
+      setListening(true);
+    }
+  }
 
   async function handleStart() {
     if (!task.trim()) return;
@@ -96,7 +135,19 @@ export default function StartPage() {
               className="flex-1 bg-transparent outline-none text-base resize-none
                          placeholder:text-[#6B7280]/70"
             />
-            <Mic size={20} className="text-[#6B7280] mt-1 shrink-0" />
+            {micSupported ? (
+              <button
+                type="button"
+                onClick={toggleMic}
+                aria-label={listening ? "Stop voice input" : "Start voice input"}
+                className={`mt-1 shrink-0 rounded-full p-1.5 transition-colors
+                            ${listening ? "bg-[#F2994A] text-white animate-pulse" : "text-[#6B7280] hover:bg-black/5"}`}
+              >
+                <Mic size={18} />
+              </button>
+            ) : (
+              <MicOff size={18} className="text-[#6B7280]/40 mt-1 shrink-0" aria-hidden="true" />
+            )}
           </div>
 
           {error && (
