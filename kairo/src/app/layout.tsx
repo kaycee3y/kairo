@@ -1,8 +1,7 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { Header } from "@/components/ui/Header";
+import { BottomNav } from "@/components/ui/BottomNav";
 import { Footer } from "@/components/ui/Footer";
 
 const outfit = Outfit({
@@ -30,11 +29,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${outfit.variable} ${jakarta.variable} antialiased bg-[#FAF9F6] text-[#2D3436]`}
+        className={`${outfit.variable} ${jakarta.variable} antialiased bg-[#FAF9F6] text-[#2D3436] pb-24`}
       >
-        <Header />
         {children}
         <Footer />
+        <BottomNav />
       </body>
     </html>
   );
