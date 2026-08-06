@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Mic } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
 import { BreakdownResponse, Mission, Step } from "@/lib/types";
 
@@ -77,25 +77,27 @@ export default function StartPage() {
         />
 
         <div className="flex flex-col gap-3">
-          <h1 className="font-display text-4xl sm:text-5xl font-bold tracking-tight">
+          <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight">
             What&apos;s on your mind?
           </h1>
-          <p className="text-[#6B7280] text-lg">
-            Tell me anything you&apos;re trying to get done — I&apos;ll help
-            you find the smallest first step.
+          <p className="text-[#6B7280] text-base">
+            Tell me anything you&apos;re trying to get done.
           </p>
         </div>
 
         <div className="w-full flex flex-col gap-4">
-          <textarea
-            value={task}
-            onChange={(e) => setTask(e.target.value)}
-            placeholder="e.g. Clean my room, study for chemistry, prep for an interview..."
-            rows={3}
-            className="w-full rounded-2xl border border-black/10 bg-white p-4 text-lg
-                       placeholder:text-[#6B7280]/70 focus:outline-none focus:ring-2
-                       focus:ring-[#2F6F5E] resize-none shadow-sm"
-          />
+          <div className="w-full flex items-start gap-3 rounded-3xl border border-black/10
+                          bg-white px-5 py-4 shadow-sm focus-within:ring-2 focus-within:ring-[#2F6F5E]">
+            <textarea
+              value={task}
+              onChange={(e) => setTask(e.target.value)}
+              placeholder="Ask anything, like 'clean my room'..."
+              rows={2}
+              className="flex-1 bg-transparent outline-none text-base resize-none
+                         placeholder:text-[#6B7280]/70"
+            />
+            <Mic size={20} className="text-[#6B7280] mt-1 shrink-0" />
+          </div>
 
           {error && (
             <p className="text-sm text-[#B45309] text-left" role="alert">
@@ -106,7 +108,7 @@ export default function StartPage() {
           <button
             onClick={handleStart}
             disabled={loading || !task.trim()}
-            className="w-full flex items-center justify-center gap-2 rounded-2xl
+            className="w-full flex items-center justify-center gap-2 rounded-full
                        bg-[#2F6F5E] text-white font-display font-semibold text-lg
                        py-4 transition-opacity disabled:opacity-40
                        hover:opacity-90 focus:outline-none focus:ring-2
