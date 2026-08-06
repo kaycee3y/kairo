@@ -1,4 +1,3 @@
-// src/lib/store/useKairoStore.ts
 import { create } from "zustand";
 import { Mission, Progress, Step } from "@/lib/types";
 import {
@@ -15,20 +14,24 @@ import {
   xpForCompletingMission,
   calculateUpdatedStreak,
 } from "@/lib/xp";
+import { Achievement, checkNewAchievements } from "@/lib/achievements";
 
 interface KairoState {
   activeMission: Mission | null;
   progress: Progress;
+  lastUnlockedAchievement: Achievement | null;
 
   loadFromStorage: () => void;
   setActiveMission: (mission: Mission) => void;
   completeStep: (stepId: string) => void;
   completeMission: () => void;
+  clearLastUnlockedAchievement: () => void;
 }
 
 export const useKairoStore = create<KairoState>((set, get) => ({
   activeMission: null,
   progress: getProgress(),
+  lastUnlockedAchievement: null,
 
   loadFromStorage: () => {
     set({
@@ -85,20 +88,38 @@ export const useKairoStore = create<KairoState>((set, get) => ({
       currentProgress.lastActiveDate,
       currentProgress.currentStreak
     );
+    const newTotalMissions = currentProgress.totalMissionsCompleted + 1;
+
+    const newlyUnlocked = checkNewAchievements(
+      newTotalMissions,
+      newStreak,
+      currentProgress.achievements
+    );
 
     const updatedProgress: Progress = {
       ...currentProgress,
       xp: newXp,
       level: calculateLevel(newXp),
-      totalMissionsCompleted: currentProgress.totalMissionsCompleted + 1,
+      totalMissionsCompleted: newTotalMissions,
       totalFocusMinutes:
         currentProgress.totalFocusMinutes + mission.estimatedTotalMinutes,
       currentStreak: newStreak,
       longestStreak: Math.max(newStreak, currentProgress.longestStreak),
       lastActiveDate: today,
+      achievements: [
+        ...currentProgress.achievements,
+        ...newlyUnlocked.map((a) => a.id),
+      ],
     };
 
     persistProgress(updatedProgress);
-    set({ progress: updatedProgress });
+    set({
+      progress: updatedProgress,
+      lastUnlockedAchievement: newlyUnlocked[0] ?? null,
+    });
+  },
+
+  clearLastUnlockedAchievement: () => {
+    set({ lastUnlockedAchievement: null });
   },
 }));
