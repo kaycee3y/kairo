@@ -33,7 +33,7 @@ export default function LandingPage() {
         </h1>
 
         <p className="text-[#6B7280] text-base max-w-sm">
-          Kairo breaks any task into small, calm steps — and stays with you
+          Kairo breaks any task into small, calm steps and stays with you
           when it gets hard.
         </p>
 
