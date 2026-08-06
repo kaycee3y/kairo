@@ -1,13 +1,14 @@
-// src/app/mission/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, Volume2, VolumeX } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
 import { EmpathyRestructureResponse, Step, StuckReason } from "@/lib/types";
 import { FocusTimer } from "@/components/mission/FocusTimer";
+import { playGentleChime, speakCalmly } from "@/lib/audio";
+import { Achievement } from "@/lib/achievements";
 
 const STUCK_OPTIONS: { label: string; value: StuckReason }[] = [
   { label: "It's too big", value: "too_big" },
@@ -26,16 +27,19 @@ export default function MissionPage() {
   const loadFromStorage = useKairoStore((s) => s.loadFromStorage);
   const completeStep = useKairoStore((s) => s.completeStep);
   const completeMission = useKairoStore((s) => s.completeMission);
+  const lastUnlockedAchievement = useKairoStore((s) => s.lastUnlockedAchievement);
+  const clearLastUnlockedAchievement = useKairoStore((s) => s.clearLastUnlockedAchievement);
 
   const [needMoreTimeCount, setNeedMoreTimeCount] = useState(0);
   const [showStuckPrompt, setShowStuckPrompt] = useState(false);
   const [empathyMessage, setEmpathyMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
 
-  // Timer state
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [targetMinutes, setTargetMinutes] = useState(DEFAULT_STEP_MINUTES);
   const [timerHidden, setTimerHidden] = useState(false);
+  const hasChimedRef = useRef(false);
 
   useEffect(() => {
     loadFromStorage();
@@ -54,14 +58,21 @@ export default function MissionPage() {
 
   const currentStep: Step | undefined = activeMission?.steps[activeMission.currentStepIndex];
 
-  // Reset timer whenever the active step changes
   useEffect(() => {
     setElapsedSeconds(0);
     setTargetMinutes(DEFAULT_STEP_MINUTES);
     setNeedMoreTimeCount(0);
+    hasChimedRef.current = false;
+
+    if (currentStep && voiceEnabled && !activeMission?.completedAt) {
+      const timeout = setTimeout(() => {
+        speakCalmly(`${currentStep.title}. ${currentStep.description}`);
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep?.id]);
 
-  // Tick the stopwatch up every second while on an incomplete step
   useEffect(() => {
     if (!currentStep || activeMission?.completedAt) return;
     const interval = setInterval(() => {
@@ -69,6 +80,17 @@ export default function MissionPage() {
     }, 1000);
     return () => clearInterval(interval);
   }, [currentStep, activeMission?.completedAt]);
+
+  useEffect(() => {
+    if (hasChimedRef.current) return;
+    if (elapsedSeconds >= targetMinutes * 60) {
+      hasChimedRef.current = true;
+      playGentleChime();
+      if (voiceEnabled) {
+        speakCalmly("No rush at all — but whenever you're ready, this could be a good moment to wrap up.");
+      }
+    }
+  }, [elapsedSeconds, targetMinutes, voiceEnabled]);
 
   if (!activeMission) {
     return (
@@ -89,8 +111,13 @@ export default function MissionPage() {
     const willBeComplete =
       activeMission!.steps.filter((s) => s.completed).length + 1 ===
       activeMission!.steps.length;
+
     if (willBeComplete) {
       completeMission();
+      playGentleChime();
+      if (voiceEnabled) {
+        speakCalmly("You did it — every step, done. That took real effort, and you showed up for it.");
+      }
     }
   }
 
@@ -99,15 +126,15 @@ export default function MissionPage() {
     setNeedMoreTimeCount(nextCount);
 
     if (nextCount < 3) {
-      // First two presses: gently extend the timer, no AI call needed
       setTargetMinutes((m) => m + TIMER_EXTENSION_MINUTES);
-      setEmpathyMessage(
+      const message =
         nextCount === 1
           ? "Sure — let's give this a little more room. Take your time."
-          : "No worries at all, we've added a bit more time again."
-      );
+          : "No worries at all, we've added a bit more time again.";
+      setEmpathyMessage(message);
+      if (voiceEnabled) speakCalmly(message);
+      hasChimedRef.current = false;
     } else {
-      // Third consecutive press: something deeper is going on, ask why
       setShowStuckPrompt(true);
     }
   }
@@ -133,9 +160,11 @@ export default function MissionPage() {
 
       const data: EmpathyRestructureResponse = await res.json();
       setEmpathyMessage(data.empathy_message);
+      if (voiceEnabled) speakCalmly(data.empathy_message);
       setNeedMoreTimeCount(0);
       setTargetMinutes(DEFAULT_STEP_MINUTES);
       setElapsedSeconds(0);
+      hasChimedRef.current = false;
 
       const newSteps: Step[] = data.new_micro_steps.map((s) => ({
         id: crypto.randomUUID(),
@@ -156,12 +185,18 @@ export default function MissionPage() {
       });
     } catch (err) {
       console.error(err);
-      setEmpathyMessage(
-        "No worries — let's just take a breath and try the next small piece when you're ready."
-      );
+      const fallback =
+        "No worries — let's just take a breath and try the next small piece when you're ready.";
+      setEmpathyMessage(fallback);
+      if (voiceEnabled) speakCalmly(fallback);
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleDoneViewingCompletion() {
+    clearLastUnlockedAchievement();
+    router.push("/");
   }
 
   return (
@@ -183,7 +218,10 @@ export default function MissionPage() {
         </div>
 
         {isMissionComplete ? (
-          <MissionCompleteCard onDone={() => router.push("/")} />
+          <MissionCompleteCard
+            onDone={handleDoneViewingCompletion}
+            achievement={lastUnlockedAchievement}
+          />
         ) : (
           <>
             <p className="text-[#6B7280] text-center">{activeMission.coachMessage}</p>
@@ -197,12 +235,21 @@ export default function MissionPage() {
                 transition={{ duration: 0.4 }}
                 className="rounded-3xl bg-white shadow-sm border border-black/5 p-8 flex flex-col gap-6 items-center text-center"
               >
-                <FocusTimer
-                  elapsedSeconds={elapsedSeconds}
-                  targetMinutes={targetMinutes}
-                  hidden={timerHidden}
-                  onToggleHidden={() => setTimerHidden((h) => !h)}
-                />
+                <div className="flex items-center justify-between w-full">
+                  <FocusTimer
+                    elapsedSeconds={elapsedSeconds}
+                    targetMinutes={targetMinutes}
+                    hidden={timerHidden}
+                    onToggleHidden={() => setTimerHidden((h) => !h)}
+                  />
+                  <button
+                    onClick={() => setVoiceEnabled((v) => !v)}
+                    aria-label={voiceEnabled ? "Turn off calm voice" : "Turn on calm voice"}
+                    className="text-[#6B7280] hover:text-[#2D3436] focus:outline-none focus:ring-2 focus:ring-[#2F6F5E] rounded-full p-1.5"
+                  >
+                    {voiceEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                  </button>
+                </div>
 
                 <h2 className="font-display text-2xl font-bold">
                   {currentStep?.title}
@@ -285,7 +332,13 @@ export default function MissionPage() {
   );
 }
 
-function MissionCompleteCard({ onDone }: { onDone: () => void }) {
+function MissionCompleteCard({
+  onDone,
+  achievement,
+}: {
+  onDone: () => void;
+  achievement: Achievement | null;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -293,13 +346,39 @@ function MissionCompleteCard({ onDone }: { onDone: () => void }) {
       transition={{ duration: 0.5 }}
       className="rounded-3xl bg-white shadow-sm border border-black/5 p-10 flex flex-col items-center gap-4 text-center"
     >
-      <div className="text-5xl">🎉</div>
+      {achievement ? (
+        <div className="relative flex items-center justify-center w-24 h-24 mb-2" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full border-2 border-[#F2994A]/40"
+              initial={{ width: 40, height: 40, opacity: 0.6 }}
+              animate={{ width: 100 + i * 26, height: 100 + i * 26, opacity: 0 }}
+              transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.4, ease: "easeOut" }}
+            />
+          ))}
+          <div className="relative w-16 h-16 rounded-full bg-[#F2994A] flex items-center justify-center text-white text-2xl">
+            🏅
+          </div>
+        </div>
+      ) : (
+        <div className="text-5xl">🎉</div>
+      )}
+
       <h2 className="font-display text-2xl font-bold">
-        You did it — every step, done.
+        {achievement ? "New badge unlocked!" : "You did it — every step, done."}
       </h2>
+
+      {achievement && (
+        <p className="font-display font-semibold text-[#2F6F5E]">{achievement.title}</p>
+      )}
+
       <p className="text-[#6B7280]">
-        That took real effort, and you showed up for it. Nice work.
+        {achievement
+          ? achievement.description
+          : "That took real effort, and you showed up for it. Nice work."}
       </p>
+
       <button
         onClick={onDone}
         className="w-full rounded-2xl bg-[#F2994A] text-white font-display
