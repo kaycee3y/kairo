@@ -14,7 +14,7 @@ const FEATURES = [
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen flex flex-col px-6 py-10 max-w-xl mx-auto w-full gap-6">
+    <main className="min-h-screen flex flex-col px-6 py-10 max-w-xl mx-auto w-full gap-8">
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -37,37 +37,36 @@ export default function LandingPage() {
           when it gets hard.
         </p>
 
-        <Link
-          href="/start"
-          className="inline-flex items-center justify-center gap-2 rounded-full
-                     bg-[#2F6F5E] text-white font-display font-semibold text-base
-                     py-3.5 px-8 w-full hover:opacity-90 transition-opacity
-                     focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F6F5E]"
-        >
-          Get started
-          <ArrowRight size={18} />
-        </Link>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
-        className="flex flex-col gap-3"
-      >
-        <p className="text-sm text-[#6B7280] px-2">Or jump right in:</p>
-        <div className="flex flex-wrap gap-2">
-          {SUGGESTIONS.map((s) => (
-            <Link
-              key={s}
-              href="/start"
-              className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm
-                         text-[#2D3436] hover:bg-black/5 transition-colors"
-            >
-              {s}
-            </Link>
-          ))}
+        <div className="relative w-full">
+          <motion.div
+            className="absolute inset-0 rounded-full bg-[#2F6F5E]"
+            animate={{ opacity: [0.5, 0, 0.5], scale: [1, 1.08, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            aria-hidden="true"
+          />
+          <Link
+            href="/start"
+            className="relative inline-flex items-center justify-center gap-2 rounded-full
+                       bg-[#2F6F5E] text-white font-display font-semibold text-lg
+                       py-4 px-8 w-full hover:opacity-90 transition-opacity
+                       focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2F6F5E]"
+          >
+            Start here
+            <ArrowRight size={20} />
+          </Link>
         </div>
+
+        <p className="text-xs text-[#6B7280]/70">
+          Not sure what to type? Try:{" "}
+          {SUGGESTIONS.map((s, i) => (
+            <span key={s}>
+              <Link href="/start" className="underline underline-offset-2 hover:text-[#2D3436]">
+                {s}
+              </Link>
+              {i < SUGGESTIONS.length - 1 ? " · " : ""}
+            </span>
+          ))}
+        </p>
       </motion.div>
 
       <motion.div
