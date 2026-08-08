@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, Mic, MicOff } from "lucide-react";
 import { useKairoStore } from "@/lib/store/useKairoStore";
 import { BreakdownResponse, Mission, Step } from "@/lib/types";
 import { AIOrb } from "@/components/ui/AIOrb";
+import { LoadingLogo } from "@/components/ui/LoadingLogo";
 
 export default function StartPage() {
   const router = useRouter();
@@ -96,7 +97,6 @@ export default function StartPage() {
       setError(
         "No worries — something didn't connect right. Let's try that again."
       );
-    } finally {
       setLoading(false);
     }
   }
@@ -166,6 +166,19 @@ export default function StartPage() {
           </button>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {loading && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#FAF9F6]/90 backdrop-blur-sm flex items-center justify-center z-50"
+          >
+            <LoadingLogo size={72} message="Finding your first step..." />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </main>
   );
 }
