@@ -9,6 +9,7 @@ import { EmpathyRestructureResponse, Step, StuckReason } from "@/lib/types";
 import { FocusTimer } from "@/components/mission/FocusTimer";
 import { playGentleChime, speakCalmly } from "@/lib/audio";
 import { Achievement } from "@/lib/achievements";
+import { LoadingLogo } from "@/components/ui/LoadingLogo";
 
 const STUCK_OPTIONS: { label: string; value: StuckReason }[] = [
   { label: "It's too big", value: "too_big" },
@@ -95,7 +96,7 @@ export default function MissionPage() {
   if (!activeMission) {
     return (
       <main className="min-h-screen flex items-center justify-center">
-        <p className="text-[#6B7280]">Loading your mission...</p>
+        <LoadingLogo size={72} message="Loading your mission..." />
       </main>
     );
   }
